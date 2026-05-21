@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>P-N 접합 시뮬레이터 PRO - v9 (Home)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #030712; /* Very dark blue/black */
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-glow: rgba(56, 189, 248, 0.5);
+            --accent-color: #38bdf8;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', 'Pretendard', sans-serif;
+            overflow: hidden;
+            user-select: none;
+            position: relative;
+        }
+
+        /* Ambient Background Glows */
+        .ambient-glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 1;
+            animation: pulse-glow 10s infinite alternate ease-in-out;
+        }
+
+        .glow-1 {
+            top: -10%;
+            left: -10%;
+            width: 50vw;
+            height: 50vw;
+            background: radial-gradient(circle, rgba(56,189,248,0.3) 0%, rgba(3,7,18,0) 70%);
+        }
+
+        .glow-2 {
+            bottom: -20%;
+            right: -10%;
+            width: 60vw;
+            height: 60vw;
+            background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, rgba(3,7,18,0) 70%);
+            animation-delay: -5s;
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.3; }
+            100% { transform: scale(1.1) translate(2%, 2%); opacity: 0.5; }
+        }
+
+        #intro-page {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .landing-header {
+            width: 100%;
+            padding: 40px 80px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 20;
+        }
+
+        .logo {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo span {
+            font-weight: 300;
+            color: var(--text-secondary);
+        }
+
+        .logo::before {
+            content: '';
+            display: block;
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+            border-radius: 50%;
+            box-shadow: 0 0 20px var(--accent-glow);
+            animation: pulse-dot 2s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { box-shadow: 0 0 15px rgba(56,189,248,0.4); }
+            50% { box-shadow: 0 0 25px rgba(56,189,248,0.8); }
+            100% { box-shadow: 0 0 15px rgba(56,189,248,0.4); }
+        }
+
+        .top-nav {
+            display: flex;
+            gap: 40px;
+            background: var(--glass-bg);
+            padding: 12px 30px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--text-primary);
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background: var(--accent-color);
+            border-radius: 2px;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .landing-main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 80px;
+            gap: 80px;
+            box-sizing: border-box;
+            z-index: 20;
+        }
+
+        .landing-left {
+            flex: 1;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .badge {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--accent-color);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.1);
+        }
+
+        .landing-left h1 {
+            font-size: 4.5rem;
+            font-weight: 800;
+            color: transparent;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin: 0 0 24px 0;
+            line-height: 1.1;
+            letter-spacing: -2px;
+        }
+
+        .landing-left p {
+            font-size: 1.15rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin: 0 0 40px 0;
+            max-width: 520px;
+            font-weight: 300;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .landing-btn {
+            position: relative;
+            padding: 16px 40px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #000;
+            background: #ffffff;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .landing-btn::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #38bdf8, #8b5cf6);
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .landing-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 15px 30px rgba(56, 189, 248, 0.3);
+            color: #fff;
+        }
+
+        .landing-btn:hover::before {
+            opacity: 1;
+        }
+        
+        .landing-btn-secondary {
+            padding: 16px 30px;
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .landing-btn-secondary:hover {
+            background: var(--glass-bg);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .rules-box {
+            margin-top: 60px;
+            padding: 24px 30px;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rules-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(to bottom, #38bdf8, #8b5cf6);
+        }
+
+        .rules-box strong {
+            display: block;
+            color: var(--text-primary);
+            font-size: 1rem;
+            margin-bottom: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .rules-box ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+            font-weight: 300;
+        }
+
+        .rules-box ul li {
+            position: relative;
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+
+        .rules-box ul li:last-child {
+            margin-bottom: 0;
+        }
+
+        .rules-box ul li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 6px;
+            height: 6px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #38bdf8;
+        }
+
+        .landing-right {
+            flex: 1.2;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            position: relative;
+            perspective: 1000px;
+            animation: slideInRight 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateX(50px);
+        }
+
+        @keyframes slideInRight {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .landing-image-container {
+            width: 100%;
+            max-width: 900px;
+            height: 75vh;
+            border-radius: 30px;
+            overflow: hidden;
+            box-shadow: -20px 30px 80px rgba(0, 0, 0, 0.6), 
+                        0 0 0 1px var(--glass-border);
+            position: relative;
+            transform-style: preserve-3d;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
+            50% { transform: translateY(-15px) rotateX(4deg) rotateY(-4deg); }
+            100% { transform: translateY(0px) rotateX(2deg) rotateY(-2deg); }
+        }
+
+        .landing-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            filter: contrast(1.1) brightness(0.9);
+            transition: transform 0.5s ease;
+        }
+        
+        .landing-image-container:hover img {
+            transform: scale(1.05);
+        }
+
+        .landing-image-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(45deg, rgba(3,7,18,0.7) 0%, rgba(3,7,18,0) 50%, rgba(56,189,248,0.1) 100%);
+            pointer-events: none;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+        }
+
+        /* Abstract UI elements over image */
+        .ui-element {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+
+        .ui-1 {
+            bottom: 40px;
+            left: -30px;
+            animation: float-ui 5s ease-in-out infinite alternate;
+        }
+
+        .ui-2 {
+            top: 60px;
+            right: -20px;
+            animation: float-ui 7s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes float-ui {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-20px); }
+        }
+        
+        .ui-icon {
+            width: 36px;
+            height: 36px;
+            background: rgba(56, 189, 248, 0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+        }
+        
+        .ui-text {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .ui-title {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .ui-value {
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    
+    <div id="intro-page">
+        <header class="landing-header">
+            <div class="logo">SIMULATOR<span>PRO</span></div>
+            <nav class="top-nav">
+                <a href="#" class="nav-link active">Home</a>
+                <a href="pn3.html" class="nav-link">Workspace</a>
+                <a href="#" class="nav-link">Documentation</a>
+            </nav>
+        </header>
+        
+        <main class="landing-main">
+            <div class="landing-left">
+                <div class="badge">v9.0 Release</div>
+                <h1>Design your<br>own junction</h1>
+                <p>차세대 반도체 공학을 위한 3D 인터랙티브 P-N 접합 시뮬레이터입니다. 전자의 흐름을 3D 환경에서 실시간으로 관찰하고 자신만의 회로를 구성해보세요.</p>
+                
+                <div class="btn-group">
+                    <button class="landing-btn" onclick="window.location.href='pn3.html'">
+                        시뮬레이터 시작
+                    </button>
+                    <button class="landing-btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        튜토리얼 영상
+                    </button>
+                </div>
+
+                <div class="rules-box">
+                    <strong>회로 작동 조건</strong>
+                    <ul>
+                        <li>P형과 N형 반도체가 서로 맞닿아 있어야 합니다.</li>
+                        <li>+극은 도선을 통해 P형에 연결되어야 합니다.</li>
+                        <li>-극은 도선을 통해 N형에 연결되어야 합니다.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="landing-right">
+                <div class="landing-image-container">
+                    <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&q=80&w=1200" alt="Semiconductor 3D Preview">
+                    
+                    <div class="ui-element ui-1">
+                        <div class="ui-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                        </div>
+                        <div class="ui-text">
+                            <span class="ui-title">Current Flow</span>
+                            <span class="ui-value">Active (Forward Bias)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="ui-element ui-2">
+                        <div class="ui-icon" style="color: #8b5cf6; background: rgba(139, 92, 246, 0.2);">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                        </div>
+                        <div class="ui-text">
+                            <span class="ui-title">Depletion Region</span>
+                            <span class="ui-value">Narrowing...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
