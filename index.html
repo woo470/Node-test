@@ -20,7 +20,7 @@
             background-color: var(--bg-color);
             color: var(--text-primary);
             font-family: 'Inter', 'Pretendard', sans-serif;
-            overflow: hidden;
+            overflow-x: hidden;
             user-select: none;
             position: relative;
         }
@@ -448,6 +448,169 @@
             font-weight: 700;
             letter-spacing: 0.5px;
         }
+
+        /* Examples Section */
+        .examples-section {
+            position: relative;
+            z-index: 10;
+            padding: 120px 80px 100px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 80px;
+        }
+
+        .section-badge {
+            display: inline-block;
+            background: rgba(139, 92, 246, 0.1);
+            color: #a78bfa;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+
+        .section-header h2 {
+            font-size: 3rem;
+            font-weight: 800;
+            color: transparent;
+            background: linear-gradient(to right, #ffffff, #94a3b8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin: 0 0 16px 0;
+            letter-spacing: -1px;
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            font-weight: 300;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        .examples-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+        }
+
+        .example-card {
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            overflow: hidden;
+            backdrop-filter: blur(20px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .example-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        .card-diagram {
+            width: 100%;
+            padding: 40px 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.3);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card-diagram svg {
+            width: 100%;
+            max-width: 320px;
+            height: auto;
+        }
+
+        .card-screenshot {
+            width: 100%;
+            border-bottom: 1px solid var(--glass-border);
+            overflow: hidden;
+        }
+
+        .card-screenshot img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.4s ease;
+        }
+
+        .example-card:hover .card-screenshot img {
+            transform: scale(1.05);
+        }
+
+        .card-body {
+            padding: 28px;
+        }
+
+        .card-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+        }
+
+        .tag-pn {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        .tag-np {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.25);
+        }
+
+        .tag-pnp {
+            background: rgba(251, 146, 60, 0.15);
+            color: #fb923c;
+            border: 1px solid rgba(251, 146, 60, 0.25);
+        }
+
+        .card-body h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0 0 12px 0;
+        }
+
+        .card-body p {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            line-height: 1.75;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        @media (max-width: 1024px) {
+            .examples-grid {
+                grid-template-columns: 1fr;
+                max-width: 500px;
+                margin: 0 auto;
+            }
+            .examples-section {
+                padding: 80px 32px 60px;
+            }
+            .section-header h2 {
+                font-size: 2.2rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -466,7 +629,8 @@
         <main class="landing-main">
             <div class="landing-left">
                 <div class="badge">v9.0 Release</div>
-                <h1>pnp 접합 시뮬레이터</h1>
+                <h1>PNP 접합 
+                    시뮬레이터</h1>
                 <p>차세대 반도체 공학을 위한 3D 인터랙티브 P-N 접합 시뮬레이터입니다. 전자의 흐름을 3D 환경에서 실시간으로 관찰하고 자신만의 회로를 구성해보세요.</p>
 
                 <div class="btn-group">
@@ -492,5 +656,164 @@
             </div>
         </main>
     </div>
+
+    <section class="examples-section">
+        <div class="section-header">
+            <div class="section-badge">Junction Types</div>
+            <h2>접합 유형 소개</h2>
+            <p>반도체 접합의 세 가지 기본 구조를 도면과 함께 알아보세요. 시뮬레이터에서 직접 구현해볼 수 있습니다.</p>
+        </div>
+
+        <div class="examples-grid">
+            <!-- PN 접합 -->
+            <div class="example-card">
+                <div class="card-diagram">
+                    <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="pGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#ff4466"/>
+                                <stop offset="100%" stop-color="#cc2244"/>
+                            </linearGradient>
+                            <linearGradient id="nGrad" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#4466ff"/>
+                                <stop offset="100%" stop-color="#2244cc"/>
+                            </linearGradient>
+                            <filter id="glow1">
+                                <feGaussianBlur stdDeviation="3" result="blur"/>
+                                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                            </filter>
+                        </defs>
+                        <!-- P block -->
+                        <rect x="30" y="30" width="110" height="100" rx="12" fill="url(#pGrad)" opacity="0.85"/>
+                        <text x="85" y="88" text-anchor="middle" fill="white" font-size="28" font-weight="800" font-family="Inter, sans-serif">P</text>
+                        <!-- N block -->
+                        <rect x="160" y="30" width="110" height="100" rx="12" fill="url(#nGrad)" opacity="0.85"/>
+                        <text x="215" y="88" text-anchor="middle" fill="white" font-size="28" font-weight="800" font-family="Inter, sans-serif">N</text>
+                        <!-- Junction line -->
+                        <line x1="150" y1="35" x2="150" y2="125" stroke="#38bdf8" stroke-width="2" stroke-dasharray="6,4" filter="url(#glow1)"/>
+                        <!-- Arrow -->
+                        <line x1="60" y1="148" x2="240" y2="148" stroke="#555" stroke-width="1.5"/>
+                        <polygon points="240,144 250,148 240,152" fill="#555"/>
+                        <text x="150" y="14" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter, sans-serif">순방향 전류 흐름</text>
+                        <!-- Holes and Electrons -->
+                        <circle cx="60" cy="60" r="5" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="95" cy="95" r="5" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="75" cy="75" r="5" fill="#ff6688" opacity="0.7"/>
+                        <text x="60" y="64" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                        <text x="95" y="99" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                        <text x="75" y="79" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                        <circle cx="190" cy="60" r="5" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="225" cy="95" r="5" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="210" cy="75" r="5" fill="#6688ff" opacity="0.7"/>
+                        <text x="190" y="64" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                        <text x="225" y="99" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                        <text x="210" y="79" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <span class="card-tag tag-pn">PN Junction</span>
+                    <h3>PN 접합</h3>
+                    <p>P형 반도체와 N형 반도체가 맞닿아 형성되는 가장 기본적인 접합입니다. 순방향 바이어스를 걸면 공핍층이 줄어들며 정공과 전자가 접합면에서 재결합하여 전류가 흐릅니다. 다이오드의 기본 원리입니다.</p>
+                </div>
+            </div>
+
+            <!-- NP 접합 -->
+            <div class="example-card">
+                <div class="card-diagram">
+                    <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="nGrad2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#4466ff"/>
+                                <stop offset="100%" stop-color="#2244cc"/>
+                            </linearGradient>
+                            <linearGradient id="pGrad2" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#ff4466"/>
+                                <stop offset="100%" stop-color="#cc2244"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- N block -->
+                        <rect x="30" y="30" width="110" height="100" rx="12" fill="url(#nGrad2)" opacity="0.85"/>
+                        <text x="85" y="88" text-anchor="middle" fill="white" font-size="28" font-weight="800" font-family="Inter, sans-serif">N</text>
+                        <!-- P block -->
+                        <rect x="160" y="30" width="110" height="100" rx="12" fill="url(#pGrad2)" opacity="0.85"/>
+                        <text x="215" y="88" text-anchor="middle" fill="white" font-size="28" font-weight="800" font-family="Inter, sans-serif">P</text>
+                        <!-- Junction line -->
+                        <line x1="150" y1="35" x2="150" y2="125" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,4" filter="url(#glow1)"/>
+                        <!-- Arrow (reverse) -->
+                        <line x1="240" y1="148" x2="60" y2="148" stroke="#555" stroke-width="1.5"/>
+                        <polygon points="60,144 50,148 60,152" fill="#555"/>
+                        <text x="150" y="14" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter, sans-serif">역방향 바이어스 구조</text>
+                        <!-- Electrons and Holes -->
+                        <circle cx="60" cy="60" r="5" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="95" cy="95" r="5" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="75" cy="75" r="5" fill="#6688ff" opacity="0.7"/>
+                        <text x="60" y="64" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                        <text x="95" y="99" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                        <text x="75" y="79" text-anchor="middle" fill="white" font-size="7" font-weight="700">-</text>
+                        <circle cx="190" cy="60" r="5" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="225" cy="95" r="5" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="210" cy="75" r="5" fill="#ff6688" opacity="0.7"/>
+                        <text x="190" y="64" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                        <text x="225" y="99" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                        <text x="210" y="79" text-anchor="middle" fill="white" font-size="7" font-weight="700">+</text>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <span class="card-tag tag-np">NP Junction</span>
+                    <h3>NP 접합</h3>
+                    <p>N형이 먼저 오고 P형이 뒤따르는 역방향 배치입니다. +극을 N형에, -극을 P형에 연결하면 역방향 바이어스가 되어 공핍층이 넓어지고 전류가 차단됩니다. 이 특성은 정류 회로와 보호 회로에 활용됩니다.</p>
+                </div>
+            </div>
+
+            <!-- PNP 접합 -->
+            <div class="example-card">
+                <div class="card-diagram">
+                    <svg viewBox="0 0 300 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="pGrad3" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#ff4466"/>
+                                <stop offset="100%" stop-color="#cc2244"/>
+                            </linearGradient>
+                            <linearGradient id="nGrad3" x1="0" y1="0" x2="1" y2="1">
+                                <stop offset="0%" stop-color="#4466ff"/>
+                                <stop offset="100%" stop-color="#2244cc"/>
+                            </linearGradient>
+                        </defs>
+                        <!-- P block (Emitter) -->
+                        <rect x="10" y="30" width="80" height="100" rx="10" fill="url(#pGrad3)" opacity="0.85"/>
+                        <text x="50" y="85" text-anchor="middle" fill="white" font-size="22" font-weight="800" font-family="Inter, sans-serif">P</text>
+                        <text x="50" y="42" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="8" font-family="Inter, sans-serif">Emitter</text>
+                        <!-- N block (Base) -->
+                        <rect x="110" y="30" width="80" height="100" rx="10" fill="url(#nGrad3)" opacity="0.85"/>
+                        <text x="150" y="85" text-anchor="middle" fill="white" font-size="22" font-weight="800" font-family="Inter, sans-serif">N</text>
+                        <text x="150" y="42" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="8" font-family="Inter, sans-serif">Base</text>
+                        <!-- P block (Collector) -->
+                        <rect x="210" y="30" width="80" height="100" rx="10" fill="url(#pGrad3)" opacity="0.85"/>
+                        <text x="250" y="85" text-anchor="middle" fill="white" font-size="22" font-weight="800" font-family="Inter, sans-serif">P</text>
+                        <text x="250" y="42" text-anchor="middle" fill="rgba(255,255,255,0.6)" font-size="8" font-family="Inter, sans-serif">Collector</text>
+                        <!-- Junction lines -->
+                        <line x1="100" y1="35" x2="100" y2="125" stroke="#fb923c" stroke-width="2" stroke-dasharray="6,4" filter="url(#glow1)"/>
+                        <line x1="200" y1="35" x2="200" y2="125" stroke="#fb923c" stroke-width="2" stroke-dasharray="6,4" filter="url(#glow1)"/>
+                        <!-- Arrows -->
+                        <line x1="30" y1="148" x2="270" y2="148" stroke="#555" stroke-width="1.5"/>
+                        <polygon points="270,144 280,148 270,152" fill="#555"/>
+                        <text x="150" y="14" text-anchor="middle" fill="#94a3b8" font-size="11" font-family="Inter, sans-serif">PNP 트랜지스터 구조</text>
+                        <!-- Particles -->
+                        <circle cx="35" cy="70" r="4" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="60" cy="100" r="4" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="135" cy="70" r="4" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="165" cy="100" r="4" fill="#6688ff" opacity="0.7"/>
+                        <circle cx="235" cy="70" r="4" fill="#ff6688" opacity="0.7"/>
+                        <circle cx="260" cy="100" r="4" fill="#ff6688" opacity="0.7"/>
+                    </svg>
+                </div>
+                <div class="card-body">
+                    <span class="card-tag tag-pnp">PNP Transistor</span>
+                    <h3>PNP 접합</h3>
+                    <p>두 개의 P형 반도체 사이에 얇은 N형 반도체(베이스)를 끼워 만든 트랜지스터 구조입니다. 에미터에서 주입된 정공이 얇은 베이스를 통과해 컬렉터로 이동하며 전류 증폭이 일어납니다. 시뮬레이터에서 P-N-P 순서로 배치하면 동작을 확인할 수 있습니다.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 </body>
 </html>

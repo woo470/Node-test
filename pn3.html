@@ -507,7 +507,7 @@
                 }
             });
 
-            const VALID = ['P,N', 'P,N,P', 'N,P,N'];
+            const VALID = ['P,N', 'N,P', 'P,N,P', 'N,P,N'];
             const isValidPrefix = s => s === '' || VALID.some(v => v === s || v.startsWith(s + ','));
 
             for (const plus of allPlus) {
@@ -570,6 +570,9 @@
                 if (physicsResult.type === 'P,N') {
                     title.innerText = 'PN 접합 성공';
                     detail.innerText = '순방향 바이어스 — 정공과 전자가 접합면에서 재결합하며 전류가 흐릅니다.';
+                } else if (physicsResult.type === 'N,P') {
+                    title.innerText = 'NP 접합 성공';
+                    detail.innerText = '역방향 바이어스 — N형에서 P형으로 전류가 흐릅니다.';
                 } else if (physicsResult.type === 'P,N,P') {
                     title.innerText = 'PNP 접합 성공';
                     detail.innerText = 'PNP 트랜지스터 구조가 완성되어 전류가 흐릅니다.';
