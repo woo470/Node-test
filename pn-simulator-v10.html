@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <title>P-N 접합 시뮬레이터 PRO - v10</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --p-color: #ff4444;
+            --n-color: #4444ff;
+            --bg-dark: #0a0a0c;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: white;
+            font-family: 'Pretendard', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        canvas { display: block; }
+
+        #home-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #202433;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            transition: all 0.2s ease;
+        }
+
+        #home-btn:hover {
+            background: #2a2f42;
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        #sidebar {
+            position: absolute;
+            left: 20px;
+            top: 20px;
+            width: 180px;
+            height: calc(100% - 40px);
+            background: #111111;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 20px;
+            box-sizing: border-box;
+            gap: 12px;
+            z-index: 10;
+        }
+
+        .block-item {
+            width: 100%;
+            padding: 14px 18px;
+            background: #2a2b2e;
+            border: 1px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: flex-start;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #d1d1d1;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        .block-item:hover { background: #3a3b3e; color: #fff; }
+
+        .block-item.active {
+            background: #4a4b4e;
+            border-color: #00f2fe;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+        }
+
+        .icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            margin-right: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            background: transparent;
+            box-sizing: border-box;
+        }
+
+        .icon-p {
+            border: 2px solid #ff3366;
+            color: #ff3366;
+            box-shadow: 0 0 8px rgba(255, 51, 102, 0.6), inset 0 0 8px rgba(255, 51, 102, 0.4);
+            text-shadow: 0 0 5px rgba(255, 51, 102, 0.8);
+        }
+
+        .icon-n {
+            border: 2px solid #4477ff;
+            color: #4477ff;
+            box-shadow: 0 0 8px rgba(68, 119, 255, 0.6), inset 0 0 8px rgba(68, 119, 255, 0.4);
+            text-shadow: 0 0 5px rgba(68, 119, 255, 0.8);
+        }
+
+        .icon-plus {
+            border: 2px solid #ff3333;
+            border-radius: 50%;
+            color: #ff3333;
+            box-shadow: 0 0 8px rgba(255, 51, 51, 0.6), inset 0 0 8px rgba(255, 51, 51, 0.4);
+            text-shadow: 0 0 5px rgba(255, 51, 51, 0.8);
+            font-size: 1.1rem;
+        }
+
+        .icon-minus {
+            border: 2px solid #3366ff;
+            border-radius: 50%;
+            color: #3366ff;
+            box-shadow: 0 0 8px rgba(51, 102, 255, 0.6), inset 0 0 8px rgba(51, 102, 255, 0.4);
+            text-shadow: 0 0 5px rgba(51, 102, 255, 0.8);
+            font-size: 1.3rem;
+        }
+
+        .icon-wire {
+            width: 20px;
+            height: 10px;
+            border: 2px solid #ffaa00;
+            border-radius: 5px;
+            box-shadow: 0 0 8px rgba(255, 170, 0, 0.6), inset 0 0 8px rgba(255, 170, 0, 0.4);
+        }
+
+        .reset-btn {
+            margin-top: auto;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background: transparent;
+            border: 1px solid rgba(255, 68, 68, 0.5);
+            color: #ff4444;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn:hover {
+            background: rgba(255, 68, 68, 0.2);
+            color: #fff;
+            border-color: #ff4444;
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.4);
+        }
+
+        #context-menu {
+            position: absolute;
+            display: none;
+            background: #1a1a22;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            z-index: 200;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.9);
+            min-width: 150px;
+        }
+
+        .menu-title {
+            font-size: 0.8rem;
+            color: #00f2fe;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-close { color: #888; cursor: pointer; font-size: 0.9rem; }
+        .menu-close:hover { color: #ff4444; }
+
+        .menu-input-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .menu-input-row input {
+            width: 40px;
+            background: #333;
+            border: 1px solid #555;
+            color: white;
+            text-align: center;
+            border-radius: 3px;
+        }
+
+        .menu-btn {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .menu-btn.apply { background: #007bff; color: white; margin-top: 5px; }
+        .menu-btn.delete { background: #e74c3c; color: white; }
+
+        #guide {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            color: #00f2fe;
+            font-weight: bold;
+            z-index: 5;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,.8);
+            transition: color .3s;
+        }
+
+        .success-hud-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.9);
+            padding: 30px 40px;
+            background: rgba(10, 15, 25, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.15), inset 0 0 15px rgba(0, 255, 255, 0.1);
+            border-radius: 8px;
+            text-align: center;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 300;
+        }
+
+        .success-hud-container.active {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .hud-title {
+            color: #00ffff;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin: 0 0 10px 0;
+            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+        }
+
+        .hud-detail {
+            color: #a0c0d0;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .hud-scanline {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 10px #00ffff;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: -10%; }
+            100% { top: 110%; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="ui-container">
+        <a id="home-btn" href="index.html">← Home</a>
+        <div id="sidebar">
+            <div class="block-item" onclick="selectType('P', this)">
+                <div class="icon icon-p">P</div><span>P형</span>
+            </div>
+            <div class="block-item" onclick="selectType('N', this)">
+                <div class="icon icon-n">N</div><span>N형</span>
+            </div>
+            <div class="block-item" onclick="selectType('PLUS', this)">
+                <div class="icon icon-plus">+</div><span>+전극</span>
+            </div>
+            <div class="block-item" onclick="selectType('MINUS', this)">
+                <div class="icon icon-minus">&minus;</div><span>-전극</span>
+            </div>
+            <div class="block-item" onclick="selectType('WIRE', this)">
+                <div class="icon icon-wire"></div><span>도선</span>
+            </div>
+            <button class="reset-btn" onclick="resetScene()">전체 리셋</button>
+        </div>
+        <div id="context-menu"></div>
+        <div id="guide">부품을 골라 배치하고, 전극(+/−) 사이를 도선과 반도체로 연결하세요.</div>
+        <div id="success-hud" class="success-hud-container">
+            <div class="hud-scanline"></div>
+            <h2 class="hud-title">PN 접합 성공</h2>
+            <p class="hud-detail">회로가 정상적으로 연결되어 전류가 흐릅니다.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+        import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        let scene, camera, renderer, controls, composer, plane, gridHelper, ghostMesh = null;
+        let curMapX = 10, curMapZ = 10;
+        const GRID_SIZE = 2;
+        const WIRE_Y = 0.12;            // [FIX #3] 도선 높이 단일화 (자동 드로잉/클릭 배치 불일치 해결)
+        let objects = [], particles = [], wireArrows = [];
+        let sparks = [];
+        let selectedType = null;
+        let lastClickTime = 0, mouseDownPos = new THREE.Vector2();
+        let rightClickedObject = null;
+        let targetDistance = 20;
+        let isDrawingWire = false;
+        let lastWirePos = new THREE.Vector3();
+        let activeIds = new Set();      // 현재 전류가 흐르는 경로의 부품 id
+        let lastPathSig = '';           // [FIX #7] 경로 변경 감지용 시그니처
+        const clock = new THREE.Clock();
+        let pulseRings = [];            // 전극 네온 링 펄스 애니메이션
+
+        /* ───────── 공유 머티리얼 ───────── */
+        const MAT = {
+            darkMetal:  new THREE.MeshPhysicalMaterial({ color: 0x1c1c20, metalness: 0.85, roughness: 0.45 }),
+            anodized:   new THREE.MeshPhysicalMaterial({ color: 0x101014, metalness: 0.9, roughness: 0.22, clearcoat: 1.0 }),
+            chrome:     new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.08 }),
+            pcb:        new THREE.MeshPhysicalMaterial({ color: 0x0d1117, metalness: 0.35, roughness: 0.6 }),
+            screw:      new THREE.MeshPhysicalMaterial({ color: 0xcccccc, metalness: 1.0, roughness: 0.25 }),
+            atom:       new THREE.MeshStandardMaterial({ color: 0x39424e, metalness: 0.8, roughness: 0.3 }),
+            bond:       new THREE.MeshStandardMaterial({ color: 0x2a313b, metalness: 0.6, roughness: 0.5 })
+        };
+
+        init3D();
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x121218);
+            scene.fog = new THREE.FogExp2(0x121218, 0.013);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(20, 20, 20);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;   // [업그레이드] 더 자연스러운 톤매핑
+            renderer.toneMappingExposure = 1.15;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            // [업그레이드] 환경맵 — 유리/금속 PBR 반사 품질의 핵심
+            const pmrem = new THREE.PMREMGenerator(renderer);
+            scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+
+            const renderScene = new RenderPass(scene, camera);
+            // [FIX] 블룸이 화면 전체를 뿌옇게 만들던 문제 → 임계값/강도 재조정 (발광체만 빛남)
+            const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.0, 0.5, 0.4);
+            bloomPass.threshold = 0.45;
+            bloomPass.strength = 0.9;
+            bloomPass.radius = 0.55;
+
+            composer = new EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
+            controls.enableZoom = false;
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;   // [FIX] 카메라가 바닥 밑으로 뒤집히는 것 방지
+
+            const zoomLevels = [8, 20, 35];
+            let currentZoomIndex = 1;
+
+            // [FIX #8] 휠 줌을 캔버스 위에서만 작동 (사이드바/메뉴 스크롤과 충돌 방지)
+            renderer.domElement.addEventListener('wheel', (e) => {
+                if (e.deltaY > 0) currentZoomIndex = Math.min(2, currentZoomIndex + 1);
+                else currentZoomIndex = Math.max(0, currentZoomIndex - 1);
+                targetDistance = zoomLevels[currentZoomIndex];
+            });
+
+            updateFloor();
+            scene.add(new THREE.AmbientLight(0xffffff, 0.25));
+
+            const hemiLight = new THREE.HemisphereLight(0xbdd4ff, 0x2a2218, 0.45);
+            hemiLight.position.set(0, 20, 0);
+            scene.add(hemiLight);
+
+            const sun = new THREE.DirectionalLight(0xfff4e0, 1.4);
+            sun.position.set(15, 30, 20);
+            sun.castShadow = true;
+            sun.shadow.mapSize.width = 2048;
+            sun.shadow.mapSize.height = 2048;
+            sun.shadow.camera.near = 0.5;
+            sun.shadow.camera.far = 100;
+            const d = 30;
+            sun.shadow.camera.left = -d;
+            sun.shadow.camera.right = d;
+            sun.shadow.camera.top = d;
+            sun.shadow.camera.bottom = -d;
+            sun.shadow.bias = -0.0005;
+            scene.add(sun);
+
+            const rimLight = new THREE.DirectionalLight(0x4477ff, 0.35);  // [업그레이드] 푸른 림라이트
+            rimLight.position.set(-12, 8, -15);
+            scene.add(rimLight);
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mousedown', (e) => {
+                mouseDownPos.set(e.clientX, e.clientY);
+                if (e.button === 2) document.getElementById('context-menu').style.display = 'none';
+            });
+            window.addEventListener('mouseup', onMouseUp);
+            window.addEventListener('contextmenu', e => e.preventDefault());
+            window.addEventListener('resize', onWindowResize);
+
+            window.addEventListener('keydown', (e) => {
+                // [FIX #2] 입력창에 타이핑 중일 때는 삭제 단축키 무시
+                if (e.target.tagName === 'INPUT') return;
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    if (selectedType) {
+                        clearSelection();
+                    } else if (document.getElementById('context-menu').style.display === 'block' && rightClickedObject) {
+                        deleteObj();
+                    }
+                } else if (e.key === 'Escape') {
+                    if (isDrawingWire) { isDrawingWire = false; hideArrows(); }
+                    if (selectedType) clearSelection();
+                    document.getElementById('context-menu').style.display = 'none';
+                }
+            });
+
+            animate();
+        }
+
+        function updateFloor() {
+            if (plane) scene.remove(plane);
+            if (gridHelper) scene.remove(gridHelper);
+            const maxDim = Math.max(curMapX, curMapZ);
+            gridHelper = new THREE.GridHelper(maxDim * GRID_SIZE, maxDim, 0x444455, 0x222233);
+            const sizeX = curMapX * GRID_SIZE, sizeZ = curMapZ * GRID_SIZE;
+            if (sizeX > sizeZ) gridHelper.scale.z = sizeZ / sizeX; else gridHelper.scale.x = sizeX / sizeZ;
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+            plane = new THREE.Mesh(
+                new THREE.PlaneGeometry(sizeX, sizeZ),
+                new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.85, metalness: 0.15 })
+            );
+            plane.rotateX(-Math.PI / 2);
+            plane.receiveShadow = true;
+            plane.userData.isFloor = true;
+            scene.add(plane);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const t = clock.getElapsedTime();
+
+            if (controls && camera) {
+                const dist = camera.position.distanceTo(controls.target);
+                if (Math.abs(dist - targetDistance) > 0.05) {
+                    const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize();
+                    const newDist = dist + (targetDistance - dist) * 0.1;
+                    camera.position.copy(controls.target).add(dir.multiplyScalar(newDist));
+                }
+            }
+
+            controls.update();
+            const physicsResult = checkStrictPhysics();
+            const isFlowing = updateLogicState(physicsResult);
+            updateParticles(isFlowing);
+            updateSparks();
+            updateGlow(t);
+            if (composer) composer.render();
+            else renderer.render(scene, camera);
+        }
+
+        /* ───────── 활성 경로 발광 + 전극 링 펄스 ───────── */
+        function updateGlow(t) {
+            const pulse = 0.6 + 0.4 * Math.sin(t * 5);
+            objects.forEach(o => {
+                const m = o.userData.mainMat;
+                if (!m) return;
+                const on = activeIds.has(o.id);
+                if (o.userData.type === 'WIRE') {
+                    m.emissiveIntensity = on ? 0.5 + 0.35 * pulse : 0;
+                } else if (o.userData.type === 'P' || o.userData.type === 'N') {
+                    m.emissiveIntensity = on ? 0.18 + 0.12 * pulse : 0;
+                }
+            });
+            pulseRings.forEach((r, i) => {
+                r.emissiveIntensity = r.userData_base * (0.75 + 0.25 * Math.sin(t * 3 + i * 1.3));
+            });
+        }
+
+        /* ───────── 물리 로직: PN / PNP / NPN ───────── */
+        function checkStrictPhysics() {
+            const allPlus = objects.filter(o => o.userData.type === 'PLUS');
+            const allMinus = objects.filter(o => o.userData.type === 'MINUS');
+            if (allPlus.length === 0 || allMinus.length === 0) return false;
+
+            const isAdjacent = (a, b) => Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) <= GRID_SIZE + 0.1;
+
+            // 반도체 밑에 깔린 도선은 무시 (기존 기능 유지)
+            const interceptedIds = new Set();
+            objects.forEach(wire => {
+                if (wire.userData.type === 'WIRE') {
+                    if (objects.some(s => (s.userData.type === 'P' || s.userData.type === 'N') &&
+                        Math.abs(s.position.x - wire.position.x) < 0.1 &&
+                        Math.abs(s.position.z - wire.position.z) < 0.1)) {
+                        interceptedIds.add(wire.id);
+                    }
+                }
+            });
+
+            const VALID = ['P,N', 'P,N,P', 'N,P,N'];
+            const isValidPrefix = s => s === '' || VALID.some(v => v === s || v.startsWith(s + ','));
+
+            for (const plus of allPlus) {
+                for (const minus of allMinus) {
+                    const result = tryCircuit(plus, minus);
+                    if (result) return result;
+                }
+            }
+            return false;
+
+            function tryCircuit(plus, minus) {
+                // [FIX #5] visited 키에 "반도체 시퀀스 상태"를 포함 → 같은 칸이라도
+                // 다른 시퀀스로 도달하면 재방문 허용. 유효한 우회 경로를 놓치지 않음.
+                let queue = [{ node: plus, path: [plus], seq: [] }];
+                let visited = new Set([plus.id + '|']);
+
+                while (queue.length > 0) {
+                    const { node: curr, path, seq } = queue.shift();
+                    const seqStr = seq.join(',');
+
+                    if (curr === minus) {
+                        if (VALID.includes(seqStr)) return { fullPath: path, type: seqStr };
+                        continue;
+                    }
+
+                    for (const next of objects) {
+                        if (interceptedIds.has(next.id)) continue;
+                        if (!isAdjacent(curr, next) || next === curr) continue;
+                        if (next !== minus && (next.userData.type === 'PLUS' || next.userData.type === 'MINUS')) continue;
+
+                        // 시퀀스 상태 갱신
+                        let newSeq = seq;
+                        const t = next.userData.type;
+                        if ((t === 'P' || t === 'N') && seq[seq.length - 1] !== t) newSeq = [...seq, t];
+                        const newSeqStr = newSeq.join(',');
+                        if (!isValidPrefix(newSeqStr)) continue;   // 가지치기: 불가능한 시퀀스는 즉시 폐기
+
+                        const key = next.id + '|' + newSeqStr;
+                        if (visited.has(key)) continue;
+                        visited.add(key);
+                        queue.push({ node: next, path: [...path, next], seq: newSeq });
+                    }
+                }
+                return null;
+            }
+        }
+
+        let hudTimeout = null;
+        function updateLogicState(physicsResult) {
+            const isFlowing = !!physicsResult;
+            // [FIX #7] 경로 시그니처로 비교 → 회로가 유지된 채 "다른 경로"로 바뀌어도 갱신됨
+            const sig = isFlowing ? physicsResult.fullPath.map(n => n.id).join('-') : '';
+            if (sig === lastPathSig) return isFlowing;
+            lastPathSig = sig;
+
+            clearSparks();
+            activeIds.clear();
+            objects.forEach(o => o.userData.flowDir = null);
+
+            const hud = document.getElementById('success-hud');
+            if (isFlowing) {
+                const title = hud.querySelector('.hud-title');
+                const detail = hud.querySelector('.hud-detail');
+                if (physicsResult.type === 'P,N') {
+                    title.innerText = 'PN 접합 성공';
+                    detail.innerText = '순방향 바이어스 — 정공과 전자가 접합면에서 재결합하며 전류가 흐릅니다.';
+                } else if (physicsResult.type === 'P,N,P') {
+                    title.innerText = 'PNP 접합 성공';
+                    detail.innerText = 'PNP 트랜지스터 구조가 완성되어 전류가 흐릅니다.';
+                } else {
+                    title.innerText = 'NPN 접합 성공';
+                    detail.innerText = 'NPN 트랜지스터 구조가 완성되어 전류가 흐릅니다.';
+                }
+                hud.classList.add('active');
+                if (hudTimeout) clearTimeout(hudTimeout);
+                hudTimeout = setTimeout(() => hud.classList.remove('active'), 3000);
+
+                // [FIX #6] 경로의 각 부품에 "다음 노드 방향"을 기록 → 입자가 실제 경로를 따라 흐름
+                const p = physicsResult.fullPath;
+                p.forEach((n, i) => {
+                    activeIds.add(n.id);
+                    if (i < p.length - 1) {
+                        n.userData.flowDir = new THREE.Vector3()
+                            .subVectors(p[i + 1].position, n.position).setY(0).normalize();
+                    }
+                });
+                createSparks(p, 0xffdd00);
+            } else {
+                hud.classList.remove('active');
+                if (hudTimeout) clearTimeout(hudTimeout);
+            }
+            return isFlowing;
+        }
+
+        function createSparks(pathNodes, colorHex) {
+            if (!pathNodes || pathNodes.length < 2) return;
+            const points = pathNodes.map(node => {
+                const p = node.position.clone();
+                p.y = Math.max(p.y, 0) + 0.45;
+                return p;
+            });
+            const curve = new THREE.CatmullRomCurve3(points);
+
+            for (let i = 0; i < 4; i++) {
+                const spark = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.16, 16, 16),
+                    new THREE.MeshBasicMaterial({ color: colorHex, toneMapped: false })
+                );
+                const sparkLight = new THREE.PointLight(colorHex, 2.5, 3.5);
+                spark.add(sparkLight);
+                scene.add(spark);
+                sparks.push({ mesh: spark, light: sparkLight, curve, progress: i * 0.25, speed: 0.008 });
+            }
+        }
+
+        function clearSparks() {
+            sparks.forEach(s => scene.remove(s.mesh));
+            sparks = [];
+        }
+
+        function updateSparks() {
+            sparks.forEach(s => {
+                s.progress += s.speed;
+                if (s.progress > 1) s.progress = 0;
+                s.mesh.position.copy(s.curve.getPointAt(s.progress));
+                const k = 0.85 + 0.3 * Math.sin(s.progress * 40);   // 미세 깜빡임
+                s.mesh.scale.setScalar(k);
+                s.light.intensity = 2.0 + 1.2 * Math.sin(s.progress * 40);
+            });
+        }
+
+        /* ───────── 입자 (캐리어) ─────────
+           [FIX #6] 전체 +→− 직선이 아니라 부품별 flowDir을 따라 이동.
+           물리 반영: P형 정공(+)은 전류 방향, N형 전자(−)는 반대 방향으로 표류. */
+        function updateParticles(isFlowing) {
+            const tmp = new THREE.Vector3();
+            particles.forEach(p => {
+                if (p.isDead) return;
+                const fd = isFlowing ? p.parent.userData.flowDir : null;
+                if (fd) {
+                    const dir = (p.type === 'N') ? tmp.copy(fd).negate() : tmp.copy(fd);
+                    p.mesh.position.addScaledVector(dir, 0.045);
+                    // 블록 끝에 닿으면 반대편에서 다시 등장 (순환 — 튀는 리셋 제거)
+                    const along = p.mesh.position.dot(dir);
+                    if (along > 1.05) p.mesh.position.addScaledVector(dir, -2.1);
+                    p.mesh.position.x += (Math.random() - 0.5) * 0.012;
+                    p.mesh.position.z += (Math.random() - 0.5) * 0.012;
+                } else {
+                    p.mesh.position.x += (Math.random() - 0.5) * 0.02;
+                    p.mesh.position.y += (Math.random() - 0.5) * 0.02;
+                    p.mesh.position.z += (Math.random() - 0.5) * 0.02;
+                }
+                // 블록 내부로 클램프
+                p.mesh.position.clampScalar(-0.85, 0.85);
+                if (p.type === 'P') p.mesh.rotation.y += 0.02;
+            });
+        }
+
+        /* ───────── 셀 점유 규칙 [FIX #4] ─────────
+           - 도선: 어떤 부품이든 있으면 배치 불가
+           - P/N: 다른 P/N/전극 위 불가, 도선 위는 허용 (도선 무시 기능과 연동)
+           - 전극: 어떤 부품 위에도 불가 */
+        function cellBlocked(pos, placingType) {
+            return objects.some(o => {
+                if (Math.abs(o.position.x - pos.x) > 0.1 || Math.abs(o.position.z - pos.z) > 0.1) return false;
+                const t = o.userData.type;
+                if (placingType === 'P' || placingType === 'N') return t !== 'WIRE';
+                return true;
+            });
+        }
+
+        function inBounds(pos) {
+            return Math.abs(pos.x) <= (curMapX * GRID_SIZE) / 2 - 0.5 &&
+                   Math.abs(pos.z) <= (curMapZ * GRID_SIZE) / 2 - 0.5;
+        }
+
+        /* ───────── 고품질 프로시저럴 모델 ───────── */
+
+        function makeLetterSprite(letter, colorCss) {
+            const cv = document.createElement('canvas');
+            cv.width = cv.height = 128;
+            const ctx = cv.getContext('2d');
+            ctx.font = '900 84px Arial';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.shadowColor = colorCss; ctx.shadowBlur = 24;
+            ctx.fillStyle = '#ffffff';
+            ctx.fillText(letter, 64, 70);
+            const tex = new THREE.CanvasTexture(cv);
+            const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, opacity: 0.9 }));
+            sp.scale.set(0.7, 0.7, 1);
+            return sp;
+        }
+
+        // 실리콘 결정 격자 (원자 + 결합 막대)
+        function addLattice(group) {
+            const P = 0.55;
+            const corners = [];
+            for (const x of [-P, P]) for (const y of [-P, P]) for (const z of [-P, P]) corners.push(new THREE.Vector3(x, y, z));
+            const atomGeo = new THREE.SphereGeometry(0.1, 12, 12);
+            corners.forEach(c => {
+                const a = new THREE.Mesh(atomGeo, MAT.atom);
+                a.position.copy(c);
+                group.add(a);
+            });
+            // 12개 모서리 결합
+            const bondGeo = new THREE.CylinderGeometry(0.022, 0.022, 2 * P, 6);
+            const up = new THREE.Vector3(0, 1, 0);
+            for (let i = 0; i < corners.length; i++) {
+                for (let j = i + 1; j < corners.length; j++) {
+                    if (Math.abs(corners[i].distanceTo(corners[j]) - 2 * P) < 0.01) {
+                        const bond = new THREE.Mesh(bondGeo, MAT.bond);
+                        bond.position.lerpVectors(corners[i], corners[j], 0.5);
+                        const dir = new THREE.Vector3().subVectors(corners[j], corners[i]).normalize();
+                        bond.quaternion.setFromUnitVectors(up, dir);
+                        group.add(bond);
+                    }
+                }
+            }
+        }
+
+        function buildSemiconductor(group, type) {
+            // 색유리 쉘 — attenuation 기반 착색으로 진짜 틴티드 글라스 느낌
+            const isP = type === 'P';
+            const shellMat = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 0.0, roughness: 0.07,
+                transmission: 0.94, thickness: 1.6, ior: 1.45,
+                attenuationColor: new THREE.Color(isP ? 0xff2a3c : 0x2a55ff),
+                attenuationDistance: 1.6,
+                clearcoat: 1.0, clearcoatRoughness: 0.08,
+                iridescence: 0.55, iridescenceIOR: 1.3, iridescenceThicknessRange: [120, 380],
+                emissive: new THREE.Color(isP ? 0xff3344 : 0x3355ff),
+                emissiveIntensity: 0,
+                transparent: true
+            });
+            const shell = new THREE.Mesh(new RoundedBoxGeometry(2, 2, 2, 6, 0.2), shellMat);
+            shell.castShadow = true; shell.receiveShadow = true;
+            group.add(shell);
+            group.userData.mainMat = shellMat;
+
+            // 받침 프레임
+            const frame = new THREE.Mesh(new RoundedBoxGeometry(2.1, 0.18, 2.1, 3, 0.06), MAT.darkMetal);
+            frame.position.y = -1.05;
+            frame.castShadow = true; frame.receiveShadow = true;
+            group.add(frame);
+
+            addLattice(group);
+
+            // 캐리어: N형 = 전자(구), P형 = 정공(링)
+            for (let i = 0; i < 10; i++) {
+                let m;
+                if (isP) {
+                    m = new THREE.Mesh(
+                        new THREE.TorusGeometry(0.1, 0.04, 10, 18),
+                        new THREE.MeshStandardMaterial({
+                            color: 0xffffff, emissive: 0xff2222, emissiveIntensity: 2.8,
+                            roughness: 0.1, toneMapped: false
+                        })
+                    );
+                    m.rotation.set(Math.random() * 3, Math.random() * 3, 0);
+                } else {
+                    m = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.11, 16, 16),
+                        new THREE.MeshStandardMaterial({
+                            color: 0xffffff, emissive: 0x2244ff, emissiveIntensity: 2.8,
+                            roughness: 0.1, toneMapped: false
+                        })
+                    );
+                }
+                m.position.set((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5);
+                group.add(m);
+                particles.push({ mesh: m, type, isDead: false, parent: group });
+            }
+
+            // 상단 글자 라벨
+            const label = makeLetterSprite(type, isP ? '#ff3366' : '#4477ff');
+            label.position.y = 1.45;
+            group.add(label);
+        }
+
+        function buildWire(group) {
+            // PCB 타일 + 십자 구리 트레이스 + 코너 나사
+            const base = new THREE.Mesh(new RoundedBoxGeometry(2, 0.24, 2, 4, 0.08), MAT.pcb);
+            base.castShadow = true; base.receiveShadow = true;
+            group.add(base);
+
+            const copperMat = new THREE.MeshPhysicalMaterial({
+                color: 0xcd7f32, metalness: 1.0, roughness: 0.18,
+                clearcoat: 1.0, clearcoatRoughness: 0.1,
+                emissive: new THREE.Color(0xff8822), emissiveIntensity: 0
+            });
+            const traceA = new THREE.Mesh(new RoundedBoxGeometry(2, 0.1, 0.5, 2, 0.04), copperMat);
+            traceA.position.y = 0.16; traceA.castShadow = true;
+            const traceB = new THREE.Mesh(new RoundedBoxGeometry(0.5, 0.1, 2, 2, 0.04), copperMat);
+            traceB.position.y = 0.16; traceB.castShadow = true;
+            group.add(traceA, traceB);
+            group.userData.mainMat = copperMat;
+
+            const screwGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.08, 10);
+            [[-0.8, -0.8], [-0.8, 0.8], [0.8, -0.8], [0.8, 0.8]].forEach(([x, z]) => {
+                const s = new THREE.Mesh(screwGeo, MAT.screw);
+                s.position.set(x, 0.14, z);
+                group.add(s);
+            });
+        }
+
+        function buildElectrode(group, type) {
+            const glowColor = type === 'PLUS' ? 0xff2222 : 0x2222ff;
+
+            // 하단 베이스 + 방열핀
+            const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.92, 0.35, 32), MAT.darkMetal);
+            baseMesh.position.y = -0.82;
+            baseMesh.castShadow = true; baseMesh.receiveShadow = true;
+            group.add(baseMesh);
+            for (let i = 0; i < 3; i++) {
+                const fin = new THREE.Mesh(new THREE.CylinderGeometry(0.72 - i * 0.04, 0.72 - i * 0.04, 0.05, 32), MAT.anodized);
+                fin.position.y = -0.55 + i * 0.13;
+                fin.castShadow = true;
+                group.add(fin);
+            }
+
+            // 메인 바디
+            const bodyMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.62, 1.5, 32), MAT.anodized);
+            bodyMesh.position.y = 0.25;
+            bodyMesh.castShadow = true; bodyMesh.receiveShadow = true;
+            group.add(bodyMesh);
+
+            // 네온 링 ×2 (펄스 애니메이션)
+            [0.55, -0.05].forEach((y, i) => {
+                const ringMat = new THREE.MeshStandardMaterial({
+                    color: 0xffffff, emissive: glowColor,
+                    emissiveIntensity: i === 0 ? 5.0 : 2.2, toneMapped: false
+                });
+                ringMat.userData_base = ringMat.emissiveIntensity;
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.045, 16, 40), ringMat);
+                ring.position.y = y;
+                ring.rotation.x = Math.PI / 2;
+                group.add(ring);
+                pulseRings.push(ringMat);
+                if (!group.userData.rings) group.userData.rings = [];
+                group.userData.rings.push(ringMat);
+            });
+
+            // 크롬 캡 + 발광 기호
+            const capMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.54, 0.22, 32), MAT.chrome);
+            capMesh.position.y = 1.1;
+            capMesh.castShadow = true;
+            group.add(capMesh);
+
+            const signMat = new THREE.MeshStandardMaterial({
+                color: 0xffffff, emissive: glowColor, emissiveIntensity: 4.0, toneMapped: false
+            });
+            const signH = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.13), signMat);
+            signH.position.y = 1.24;
+            group.add(signH);
+            if (type === 'PLUS') {
+                const signV = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.06, 0.5), signMat);
+                signV.position.y = 1.24;
+                group.add(signV);
+            }
+        }
+
+        function spawnReal(type, pos, isAutoDraw = false) {
+            // [FIX #4] 점유 칸 방어 — 호출 측에서 걸러도 한 번 더 확인
+            if (cellBlocked(pos, type)) { if (!isAutoDraw) clearSelection(); return; }
+
+            const group = new THREE.Group();
+            group.userData.type = type;
+            group.position.copy(pos);
+            if (type === 'WIRE') group.position.y = WIRE_Y;   // [FIX #3] 높이 통일
+
+            if (type === 'WIRE') buildWire(group);
+            else if (type === 'P' || type === 'N') buildSemiconductor(group, type);
+            else buildElectrode(group, type);
+
+            group.scale.set(0.01, 0.01, 0.01);
+            scene.add(group);
+            objects.push(group);
+
+            let scaleFrames = 0;
+            const popAnim = () => {
+                scaleFrames++;
+                group.scale.lerp(new THREE.Vector3(1, 1, 1), 0.2);
+                if (scaleFrames < 30) requestAnimationFrame(popAnim);
+                else group.scale.set(1, 1, 1);
+            };
+            popAnim();
+
+            if (type === 'WIRE') {
+                if (!isAutoDraw) updateWireArrows(group.position);
+                else hideArrows();
+            } else {
+                hideArrows();
+            }
+            if (!isAutoDraw) clearSelection();
+        }
+
+        function removeObject(t) {
+            // 전극이면 펄스 링 목록에서도 제거 (메모리/애니메이션 누수 방지)
+            if (t.userData.rings) pulseRings = pulseRings.filter(r => !t.userData.rings.includes(r));
+            particles = particles.filter(p => p.parent !== t);
+            scene.remove(t);
+            objects = objects.filter(o => o !== t);
+        }
+
+        function updateWireArrows(basePos) {
+            hideArrows();
+            [new THREE.Vector3(2, 0, 0), new THREE.Vector3(-2, 0, 0), new THREE.Vector3(0, 0, 2), new THREE.Vector3(0, 0, -2)].forEach(d => {
+                const tp = new THREE.Vector3(basePos.x + d.x, 0, basePos.z + d.z);
+                if (!inBounds(tp)) return;
+                if (!objects.some(o => Math.abs(o.position.x - tp.x) < 0.1 && Math.abs(o.position.z - tp.z) < 0.1)) {
+                    const a = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.3, 0.6, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00aa55, emissiveIntensity: 1.2, transparent: true, opacity: 0.85 })
+                    );
+                    a.position.set(tp.x, 0.3, tp.z);
+                    a.lookAt(new THREE.Vector3(basePos.x, 0.3, basePos.z));
+                    a.rotateX(Math.PI / 2);
+                    scene.add(a);
+                    wireArrows.push(a);
+                }
+            });
+        }
+
+        function hideArrows() { wireArrows.forEach(a => scene.remove(a)); wireArrows = []; }
+
+        function onMouseUp(event) {
+            if (event.target !== renderer.domElement) return;   // [FIX] UI 클릭이 3D 입력으로 새는 것 방지
+            const dragDist = mouseDownPos.distanceTo(new THREE.Vector2(event.clientX, event.clientY));
+            if (event.button === 0) {
+                if (dragDist > 5) return;
+
+                if (isDrawingWire) {
+                    isDrawingWire = false;
+                    updateWireArrows(lastWirePos);
+                    return;
+                }
+
+                const ray = new THREE.Raycaster();
+                ray.setFromCamera(getMousePos(event), camera);
+
+                const aHit = ray.intersectObjects(wireArrows);
+                if (aHit.length > 0) {
+                    isDrawingWire = true;
+                    lastWirePos.copy(aHit[0].object.position).setY(0);
+                    spawnReal('WIRE', lastWirePos.clone(), true);
+                    return;
+                }
+
+                const oHit = ray.intersectObjects(objects, true);
+                if (oHit.length > 0) {
+                    let t = oHit[0].object;
+                    while (t.parent && !t.userData.type) t = t.parent;
+                    if (t && t.userData.type) {
+                        const now = Date.now();
+                        const isDBL = (now - lastClickTime < 300);
+                        lastClickTime = now;
+                        if (isDBL && t.userData.type === 'WIRE') { updateWireArrows(t.position); return; }
+
+                        // 집어들기 (이동)
+                        const type = t.userData.type;
+                        removeObject(t);
+                        document.querySelectorAll('.block-item').forEach(b => {
+                            b.classList.remove('active');
+                            if (b.getAttribute('onclick').includes(`'${type}'`)) b.classList.add('active');
+                        });
+                        selectedType = type;
+                        createGhost(type);
+                        ghostMesh.visible = true;
+                        ghostMesh.position.copy(t.position);
+                        hideArrows();
+                        return;
+                    }
+                }
+
+                if (selectedType && ghostMesh?.visible && !ghostMesh.userData.blocked) {
+                    spawnReal(selectedType, ghostMesh.position.clone());
+                } else hideArrows();
+            } else if (event.button === 2) {
+                if (dragDist < 5) {
+                    const ray = new THREE.Raycaster();
+                    ray.setFromCamera(getMousePos(event), camera);
+                    const hits = ray.intersectObjects([...objects, plane], true);
+                    if (hits.length > 0) {
+                        let t = hits[0].object;
+                        while (t.parent && !t.userData.type && !t.userData.isFloor) t = t.parent;
+                        showContextMenu(event.clientX, event.clientY, t);
+                    }
+                }
+            }
+        }
+
+        function showContextMenu(x, y, target) {
+            const menu = document.getElementById('context-menu');
+            menu.style.display = 'block';
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+            rightClickedObject = target;
+
+            const closeBtnHtml = `<span class="menu-close" onclick="closeContextMenu()">✕</span>`;
+
+            if (target.userData.isFloor) {
+                menu.innerHTML = `<div class="menu-title"><span>맵 크기 설정</span>${closeBtnHtml}</div>
+                    <div class="menu-input-row">X: <input type="number" id="menuX" min="4" max="40" value="${curMapX}"></div>
+                    <div class="menu-input-row">Z: <input type="number" id="menuZ" min="4" max="40" value="${curMapZ}"></div>
+                    <button class="menu-btn apply" onclick="applyMenuMapSize()">적용하기</button>`;
+            } else {
+                menu.innerHTML = `<div class="menu-title"><span>부품 설정</span>${closeBtnHtml}</div><button class="menu-btn delete" onclick="deleteObj()">삭제하기</button>`;
+            }
+        }
+
+        window.closeContextMenu = () => {
+            document.getElementById('context-menu').style.display = 'none';
+        };
+
+        window.applyMenuMapSize = () => {
+            curMapX = Math.min(40, Math.max(4, parseInt(document.getElementById('menuX').value) || 10));
+            curMapZ = Math.min(40, Math.max(4, parseInt(document.getElementById('menuZ').value) || 10));
+            updateFloor();
+            document.getElementById('context-menu').style.display = 'none';
+        };
+
+        window.deleteObj = () => {
+            // [FIX #1] 바닥은 삭제 대상에서 제외
+            if (rightClickedObject && !rightClickedObject.userData.isFloor) {
+                removeObject(rightClickedObject);
+            }
+            rightClickedObject = null;
+            document.getElementById('context-menu').style.display = 'none';
+        };
+
+        function onMouseMove(event) {
+            const intersect = getGridIntersect(event);
+
+            // 와이어 연속 그리기
+            if (isDrawingWire && intersect) {
+                let currentPos = lastWirePos.clone().setY(0);
+                let failsafe = 0;
+                while (currentPos.distanceTo(intersect) > 0.1 && failsafe++ < 100) {
+                    const dx = intersect.x - currentPos.x;
+                    const dz = intersect.z - currentPos.z;
+                    if (Math.abs(dx) > Math.abs(dz)) currentPos.x += Math.sign(dx) * GRID_SIZE;
+                    else currentPos.z += Math.sign(dz) * GRID_SIZE;
+
+                    if (!inBounds(currentPos)) break;
+                    // [FIX #4] 점유 칸(도선 외 부품 포함)은 통과하지 않고 드로잉 중단
+                    if (cellBlocked(currentPos, 'WIRE')) break;
+                    spawnReal('WIRE', currentPos.clone(), true);
+                }
+                lastWirePos.copy(currentPos);
+            }
+
+            if (intersect && selectedType && !isDrawingWire) {
+                if (!ghostMesh) createGhost(selectedType);
+                ghostMesh.visible = true;
+                ghostMesh.position.copy(intersect);
+                ghostMesh.position.y = (selectedType === 'WIRE') ? WIRE_Y : 1;
+                // [FIX #4] 배치 불가 칸이면 고스트를 빨간색으로
+                const blocked = cellBlocked(intersect, selectedType);
+                ghostMesh.userData.blocked = blocked;
+                ghostMesh.material.color.setHex(blocked ? 0xff3344 : 0x00f2fe);
+            } else if (ghostMesh) ghostMesh.visible = false;
+        }
+
+        function getGridIntersect(event) {
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(getMousePos(event), camera);
+            const hits = ray.intersectObject(plane);
+            if (hits.length > 0) {
+                const v = new THREE.Vector3(
+                    Math.round(hits[0].point.x / GRID_SIZE) * GRID_SIZE, 0,
+                    Math.round(hits[0].point.z / GRID_SIZE) * GRID_SIZE
+                );
+                return inBounds(v) ? v : null;   // [FIX] 맵 밖 배치 방지
+            }
+            return null;
+        }
+
+        function getMousePos(e) {
+            return new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        }
+
+        function createGhost(type) {
+            if (ghostMesh) scene.remove(ghostMesh);
+            const geo = type === 'WIRE'
+                ? new RoundedBoxGeometry(GRID_SIZE, 0.4, GRID_SIZE, 4, 0.1)
+                : new RoundedBoxGeometry(GRID_SIZE, GRID_SIZE, GRID_SIZE, 6, 0.2);
+            ghostMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x00f2fe, transparent: true, opacity: 0.4, wireframe: true }));
+            scene.add(ghostMesh);
+        }
+
+        window.selectType = (type, el) => {
+            selectedType = type;
+            hideArrows();
+            document.querySelectorAll('.block-item').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+            createGhost(type);
+        };
+
+        function clearSelection() {
+            selectedType = null;
+            if (ghostMesh) scene.remove(ghostMesh);
+            ghostMesh = null;
+            document.querySelectorAll('.block-item').forEach(b => b.classList.remove('active'));
+        }
+
+        window.resetScene = () => {
+            objects.forEach(o => scene.remove(o));
+            particles = [];
+            objects = [];
+            pulseRings = [];
+            activeIds.clear();
+            lastPathSig = '';
+            hideArrows();
+            clearSparks();
+            document.getElementById('success-hud').classList.remove('active');
+        };
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            if (composer) composer.setSize(window.innerWidth, window.innerHeight);
+        }
+    </script>
+</body>
+
+</html>
