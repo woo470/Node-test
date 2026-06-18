@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>P-N 접합 시뮬레이터 PRO - v9</title>
+    <title>P-N 접합 시뮬레이터 PRO - v10</title>
     <script type="importmap">
         {
             "imports": {
@@ -28,9 +28,7 @@
             user-select: none;
         }
 
-        canvas {
-            display: block;
-        }
+        canvas { display: block; }
 
         #home-btn {
             position: absolute;
@@ -90,10 +88,7 @@
             box-sizing: border-box;
         }
 
-        .block-item:hover {
-            background: #3a3b3e;
-            color: #fff;
-        }
+        .block-item:hover { background: #3a3b3e; color: #fff; }
 
         .block-item.active {
             background: #4a4b4e;
@@ -201,15 +196,8 @@
             align-items: center;
         }
 
-        .menu-close {
-            color: #888;
-            cursor: pointer;
-            font-size: 0.9rem;
-        }
-
-        .menu-close:hover {
-            color: #ff4444;
-        }
+        .menu-close { color: #888; cursor: pointer; font-size: 0.9rem; }
+        .menu-close:hover { color: #ff4444; }
 
         .menu-input-row {
             display: flex;
@@ -238,16 +226,8 @@
             font-size: 0.85rem;
         }
 
-        .menu-btn.apply {
-            background: #007bff;
-            color: white;
-            margin-top: 5px;
-        }
-
-        .menu-btn.delete {
-            background: #e74c3c;
-            color: white;
-        }
+        .menu-btn.apply { background: #007bff; color: white; margin-top: 5px; }
+        .menu-btn.delete { background: #e74c3c; color: white; }
 
         #guide {
             position: absolute;
@@ -258,6 +238,8 @@
             font-weight: bold;
             z-index: 5;
             pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,.8);
+            transition: color .3s;
         }
 
         .success-hud-container {
@@ -276,7 +258,6 @@
             overflow: hidden;
             opacity: 0;
             pointer-events: none;
-            /* 클릭 방해 금지 */
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 300;
         }
@@ -298,7 +279,7 @@
         .hud-detail {
             color: #a0c0d0;
             font-size: 0.9rem;
-            margin: 0 0 20px 0;
+            margin: 0;
         }
 
         .hud-scanline {
@@ -313,13 +294,8 @@
         }
 
         @keyframes scan {
-            0% {
-                top: -10%;
-            }
-
-            100% {
-                top: 110%;
-            }
+            0% { top: -10%; }
+            100% { top: 110%; }
         }
     </style>
 </head>
@@ -347,7 +323,7 @@
             <button class="reset-btn" onclick="resetScene()">전체 리셋</button>
         </div>
         <div id="context-menu"></div>
-        <div id="guide">정교한 회로 논리가 적용되었습니다. 전극과 부품을 올바르게 연결하세요.</div>
+        <div id="guide">부품을 골라 배치하고, 전극(+/−) 사이를 도선과 반도체로 연결하세요.</div>
         <div id="success-hud" class="success-hud-container">
             <div class="hud-scanline"></div>
             <h2 class="hud-title">PN 접합 성공</h2>
@@ -366,16 +342,18 @@
         let scene, camera, renderer, controls, composer, plane, gridHelper, ghostMesh = null;
         let curMapX = 10, curMapZ = 10;
         const GRID_SIZE = 2;
+        const WIRE_Y = 0.12;
         let objects = [], particles = [], wireArrows = [];
         let sparks = [];
         let selectedType = null;
         let lastClickTime = 0, mouseDownPos = new THREE.Vector2();
         let rightClickedObject = null;
-        let targetDistance = 20; // 줌 타겟 거리
+        let targetDistance = 20;
         let isDrawingWire = false;
         let lastWirePos = new THREE.Vector3();
+        let activeIds = new Set();
+        let lastPathSig = '';
         let wasFlowing = false;
-        let lastPathSig = ''; // 활성 경로의 객체 ID 시그니처 (경로 변경 감지용)
 
         init3D();
 
@@ -388,7 +366,7 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.toneMapping = THREE.ReinhardToneMapping;
             renderer.toneMappingExposure = 1.5;
             renderer.shadowMap.enabled = true;
@@ -407,18 +385,17 @@
 
             controls = new OrbitControls(camera, renderer.domElement);
             controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.ROTATE };
-
-            // 휠(줌)을 3단계로 커스텀
-            controls.enableZoom = false; // 기본 줌 끄기
+            controls.enableZoom = false;
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
-            const zoomLevels = [8, 20, 35]; // 가까이, 중간, 멀리 (멀리를 35로 확 줄임)
+            const zoomLevels = [8, 20, 35];
             let currentZoomIndex = 1;
 
-            window.addEventListener('wheel', (e) => {
-                if (e.deltaY > 0) currentZoomIndex = Math.min(2, currentZoomIndex + 1); // 줌 아웃
-                else currentZoomIndex = Math.max(0, currentZoomIndex - 1); // 줌 인
+            renderer.domElement.addEventListener('wheel', (e) => {
+                if (e.deltaY > 0) currentZoomIndex = Math.min(2, currentZoomIndex + 1);
+                else currentZoomIndex = Math.max(0, currentZoomIndex - 1);
                 targetDistance = zoomLevels[currentZoomIndex];
             });
 
@@ -454,19 +431,16 @@
             window.addEventListener('contextmenu', e => e.preventDefault());
             window.addEventListener('resize', onWindowResize);
 
-            // 키보드 단축키 (삭제 및 취소 기능)
             window.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT') return;
                 if (e.key === 'Delete' || e.key === 'Backspace') {
                     if (selectedType) {
-                        clearSelection(); // 집어든 상태(고스트 메쉬)에서 삭제(취소)
+                        clearSelection();
                     } else if (document.getElementById('context-menu').style.display === 'block' && rightClickedObject) {
-                        deleteObj(); // 우클릭 메뉴가 열려있을 때 타겟 오브젝트 삭제
+                        deleteObj();
                     }
                 } else if (e.key === 'Escape') {
-                    if (isDrawingWire) {
-                        isDrawingWire = false;
-                        hideArrows();
-                    }
+                    if (isDrawingWire) { isDrawingWire = false; hideArrows(); }
                     if (selectedType) clearSelection();
                     document.getElementById('context-menu').style.display = 'none';
                 }
@@ -486,7 +460,7 @@
             scene.add(gridHelper);
             plane = new THREE.Mesh(
                 new THREE.PlaneGeometry(sizeX, sizeZ),
-                new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.8, metalness: 0.2 }) // 눈부신 반사광(스페큘러) 제거를 위해 거칠기 증가, 금속성 감소
+                new THREE.MeshStandardMaterial({ color: 0x050508, roughness: 0.8, metalness: 0.2 })
             );
             plane.rotateX(-Math.PI / 2);
             plane.receiveShadow = true;
@@ -497,7 +471,6 @@
         function animate() {
             requestAnimationFrame(animate);
 
-            // 3단계 카메라 줌 스무스 이동 로직
             if (controls && camera) {
                 const dist = camera.position.distanceTo(controls.target);
                 if (Math.abs(dist - targetDistance) > 0.05) {
@@ -516,52 +489,13 @@
             else renderer.render(scene, camera);
         }
 
-        // --- 물리 로직: PN, PNP, NPN 모두 지원 ---
         function checkStrictPhysics() {
             const allPlus = objects.filter(o => o.userData.type === 'PLUS');
             const allMinus = objects.filter(o => o.userData.type === 'MINUS');
             if (allPlus.length === 0 || allMinus.length === 0) return false;
 
-            // 반도체 블록 + 전극 개수가 모두 일치해야 접합 유형으로 인정 (사용자 규칙):
-            //   PN  접합: 1P + 1N, 전극 1쌍 (1+ / 1-)
-            //              → P와 N에만 회로가 연결되어야 함
-            //   PNP 접합: 2P + 1N, 전극 2쌍 (2+ / 2-)  + 전극 배열이 +-+- 순서
-            //   NPN 접합: 1P + 2N, 전극 2쌍 (2+ / 2-)  + 전극 배열이 +-+- 순서
-            //   그 외(예: 1P+1N + 2쌍 → NPN 빌드 중간) → 무효 (전류 흐르지 않음)
-            const pTotal = objects.filter(o => o.userData.type === 'P').length;
-            const nTotal = objects.filter(o => o.userData.type === 'N').length;
-            const plusCount = allPlus.length;
-            const minusCount = allMinus.length;
-
-            let expectedSeq;
-            if (pTotal === 1 && nTotal === 1 && plusCount === 1 && minusCount === 1) {
-                expectedSeq = 'P,N';
-            } else if (pTotal === 2 && nTotal === 1 && plusCount === 2 && minusCount === 2) {
-                expectedSeq = 'P,N,P';
-            } else if (pTotal === 1 && nTotal === 2 && plusCount === 2 && minusCount === 2) {
-                expectedSeq = 'N,P,N';
-            } else return false;
-
-            // PNP/NPN: 4개 전극이 한 축으로 정렬했을 때 + - + - 순서여야 함
-            if (expectedSeq === 'P,N,P' || expectedSeq === 'N,P,N') {
-                const electrodes = [...allPlus, ...allMinus];
-                const tryAxis = (primary, secondary) => {
-                    const sorted = [...electrodes].sort((a, b) => {
-                        const d1 = a.position[primary] - b.position[primary];
-                        if (Math.abs(d1) > 0.1) return d1;
-                        return a.position[secondary] - b.position[secondary];
-                    });
-                    return sorted[0].userData.type === 'PLUS' &&
-                           sorted[1].userData.type === 'MINUS' &&
-                           sorted[2].userData.type === 'PLUS' &&
-                           sorted[3].userData.type === 'MINUS';
-                };
-                if (!tryAxis('x', 'z') && !tryAxis('z', 'x')) return false;
-            }
-
             const isAdjacent = (a, b) => Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z) <= GRID_SIZE + 0.1;
 
-            // 반도체 밑에 깔린 도선은 무시
             const interceptedIds = new Set();
             objects.forEach(wire => {
                 if (wire.userData.type === 'WIRE') {
@@ -573,139 +507,93 @@
                 }
             });
 
-            // 모든 (+, -) 전극 쌍에 대해 유효한 회로를 탐색
+            const VALID = ['P,N', 'P,N,P', 'N,P,N'];
+            const isValidPrefix = s => s === '' || VALID.some(v => v === s || v.startsWith(s + ','));
+
             for (const plus of allPlus) {
                 for (const minus of allMinus) {
-                    const result = tryCircuit(plus, minus, expectedSeq);
+                    const result = tryCircuit(plus, minus);
                     if (result) return result;
                 }
             }
             return false;
 
-            function tryCircuit(plus, minus, expectedSeq) {
-                // DFS + 백트래킹: + 에서 - 까지 가능한 모든 단순 경로를 탐색.
-                // (BFS의 전역 visited 셋은 한 노드를 한 경로에서만 사용 가능하게
-                //  만들어, 실제로 유효한 PNP/NPN 경로를 놓칠 수 있음.
-                //  예) 도선이 베이스 N 위에 깔리면 N이 도선 경로로 먼저 visited
-                //      되어 P1→N→P2 경로를 못 찾는 문제 발생.)
-                let found = null;
-                const visited = new Set();
+            function tryCircuit(plus, minus) {
+                let queue = [{ node: plus, path: [plus], seq: [] }];
+                let visited = new Set([plus.id + '|']);
 
-                function checkPathValid(path) {
-                    // 경로 상의 반도체 시퀀스 추출 (연속된 같은 타입은 1번으로 축약)
-                    const seq = [];
-                    let lastSemiType = null;
-                    for (const n of path) {
-                        const t = n.userData.type;
-                        if (t === 'P' || t === 'N') {
-                            if (t !== lastSemiType) {
-                                seq.push(t);
-                                lastSemiType = t;
-                            }
-                        }
-                    }
+                while (queue.length > 0) {
+                    const { node: curr, path, seq } = queue.shift();
                     const seqStr = seq.join(',');
 
-                    // 개수로 결정된 접합 타입과 경로 시퀀스가 정확히 일치해야 함
-                    if (seqStr !== expectedSeq) return null;
-
-                    // PNP/NPN의 추가 물리 조건:
-                    //  (1) 베이스(중간 반도체)에 도선이 직접 인접해야 함
-                    //      → PNP면 N형, NPN이면 P형에 도선이 닿아 있어야 트랜지스터 동작
-                    //  (2) 전극 사이(경로 상)에도 도선이 1개 이상 있어야 함
-                    if (expectedSeq === 'P,N,P' || expectedSeq === 'N,P,N') {
-                        const baseType = expectedSeq === 'P,N,P' ? 'N' : 'P';
-                        const basesInPath = path.filter(n => n.userData.type === baseType);
-
-                        const hasBaseWire = basesInPath.some(base => {
-                            return objects.some(o =>
-                                o.userData.type === 'WIRE' &&
-                                !interceptedIds.has(o.id) &&
-                                isAdjacent(base, o)
-                            );
-                        });
-                        if (!hasBaseWire) return null;
-
-                        const hasWireInPath = path.some(n => n.userData.type === 'WIRE');
-                        if (!hasWireInPath) return null;
-                    }
-
-                    return { fullPath: [...path], type: expectedSeq };
-                }
-
-                function dfs(curr, path) {
-                    if (found) return;
-
                     if (curr === minus) {
-                        const result = checkPathValid(path);
-                        if (result) found = result;
-                        return;
+                        if (VALID.includes(seqStr)) return { fullPath: path, type: seqStr };
+                        continue;
                     }
 
                     for (const next of objects) {
-                        if (found) return;
-                        if (interceptedIds.has(next.id)) continue; // 반도체 밑 도선 무시
-                        if (visited.has(next.id)) continue;
-                        if (!isAdjacent(curr, next)) continue;
-                        // 목적지(minus) 외의 다른 전극은 경로에서 제외
-                        if (next !== minus &&
-                            (next.userData.type === 'PLUS' || next.userData.type === 'MINUS')) continue;
+                        if (interceptedIds.has(next.id)) continue;
+                        if (!isAdjacent(curr, next) || next === curr) continue;
+                        if (next !== minus && (next.userData.type === 'PLUS' || next.userData.type === 'MINUS')) continue;
 
-                        visited.add(next.id);
-                        path.push(next);
-                        dfs(next, path);
-                        path.pop();
-                        visited.delete(next.id);
+                        let newSeq = seq;
+                        const t = next.userData.type;
+                        if ((t === 'P' || t === 'N') && seq[seq.length - 1] !== t) newSeq = [...seq, t];
+                        const newSeqStr = newSeq.join(',');
+                        if (!isValidPrefix(newSeqStr)) continue;
+
+                        const key = next.id + '|' + newSeqStr;
+                        if (visited.has(key)) continue;
+                        visited.add(key);
+                        queue.push({ node: next, path: [...path, next], seq: newSeq });
                     }
                 }
-
-                visited.add(plus.id);
-                dfs(plus, [plus]);
-                return found;
+                return null;
             }
         }
 
         let hudTimeout = null;
         function updateLogicState(physicsResult) {
             const isFlowing = !!physicsResult;
-            // 경로의 객체 ID 시그니처 — 한 프레임 사이에 경로가 달라졌는지 감지한다
-            // (도선/전극이 삭제·추가되어 경로가 끊기거나 바뀌면 즉시 반영하기 위함)
-            const newSig = physicsResult ? physicsResult.fullPath.map(n => n.id).join(',') : '';
+            const sig = isFlowing ? physicsResult.fullPath.map(n => n.id).join('-') : '';
+            if (sig === lastPathSig) return isFlowing;
+            lastPathSig = sig;
 
-            // HUD: 흐름 상태가 바뀔 때만 업데이트
-            if (isFlowing !== wasFlowing) {
-                wasFlowing = isFlowing;
-                const hud = document.getElementById('success-hud');
-                if (isFlowing) {
-                    if (hud) {
-                        const title = hud.querySelector('.hud-title');
-                        if (physicsResult.type === 'P,N') title.innerText = 'PN 접합 성공';
-                        else if (physicsResult.type === 'P,N,P') title.innerText = 'PNP 접합 성공';
-                        else if (physicsResult.type === 'N,P,N') title.innerText = 'NPN 접합 성공';
+            clearSparks();
+            activeIds.clear();
+            objects.forEach(o => o.userData.flowDir = null);
 
-                        hud.classList.add('active');
-                        // 3초 후 HUD 자동 숨김
-                        if (hudTimeout) clearTimeout(hudTimeout);
-                        hudTimeout = setTimeout(() => {
-                            hud.classList.remove('active');
-                        }, 3000);
-                    }
+            const hud = document.getElementById('success-hud');
+            if (isFlowing) {
+                const title = hud.querySelector('.hud-title');
+                const detail = hud.querySelector('.hud-detail');
+                if (physicsResult.type === 'P,N') {
+                    title.innerText = 'PN 접합 성공';
+                    detail.innerText = '순방향 바이어스 — 정공과 전자가 접합면에서 재결합하며 전류가 흐릅니다.';
+                } else if (physicsResult.type === 'P,N,P') {
+                    title.innerText = 'PNP 접합 성공';
+                    detail.innerText = 'PNP 트랜지스터 구조가 완성되어 전류가 흐릅니다.';
                 } else {
-                    if (hud) {
-                        hud.classList.remove('active');
-                        if (hudTimeout) clearTimeout(hudTimeout);
-                    }
+                    title.innerText = 'NPN 접합 성공';
+                    detail.innerText = 'NPN 트랜지스터 구조가 완성되어 전류가 흐릅니다.';
                 }
-            }
+                hud.classList.add('active');
+                if (hudTimeout) clearTimeout(hudTimeout);
+                hudTimeout = setTimeout(() => hud.classList.remove('active'), 3000);
 
-            // 스파크: 경로 시그니처가 바뀔 때마다 재생성
-            // (전극·도선 제거 시 즉시 전류가 끊긴 것처럼 보이도록)
-            if (newSig !== lastPathSig) {
-                lastPathSig = newSig;
-                clearSparks();
-                if (isFlowing) createSparks(physicsResult.fullPath, 0xffdd00);
+                const p = physicsResult.fullPath;
+                p.forEach((n, i) => {
+                    activeIds.add(n.id);
+                    if (i < p.length - 1) {
+                        n.userData.flowDir = new THREE.Vector3()
+                            .subVectors(p[i + 1].position, n.position).setY(0).normalize();
+                    }
+                });
+                createSparks(p, 0xffdd00);
+            } else {
+                hud.classList.remove('active');
+                if (hudTimeout) clearTimeout(hudTimeout);
             }
-
             return isFlowing;
         }
 
@@ -713,22 +601,17 @@
             if (!pathNodes || pathNodes.length < 2) return;
             const points = pathNodes.map(node => {
                 const p = node.position.clone();
-                p.y += 0.4; // 위로 약간 띄움
+                p.y = Math.max(p.y, 0) + 0.4;
                 return p;
             });
-            // 전극(+/-)을 포함한 경로 위를 그대로 통과하며 흐른다.
-            // 별도의 외부 아치 시각화는 제거됨.
             const curve = new THREE.CatmullRomCurve3(points);
 
-            // 원자가 줄지어 가도록 여러 개 생성
             for (let i = 0; i < 3; i++) {
                 const sparkGeo = new THREE.SphereGeometry(0.18, 16, 16);
                 const sparkMat = new THREE.MeshBasicMaterial({ color: colorHex });
                 const spark = new THREE.Mesh(sparkGeo, sparkMat);
-
                 const sparkLight = new THREE.PointLight(colorHex, 2, 3);
                 spark.add(sparkLight);
-
                 scene.add(spark);
                 sparks.push({ mesh: spark, curve: curve, progress: i * 0.33, speed: 0.008 });
             }
@@ -750,19 +633,15 @@
 
         function updateParticles(isFlowing) {
             const worldP = new THREE.Vector3();
-            const plus = objects.find(o => o.userData.type === 'PLUS');
-            const minus = objects.find(o => o.userData.type === 'MINUS');
-            let flowDir = null;
-            if (isFlowing && plus && minus) {
-                flowDir = new THREE.Vector3().subVectors(minus.position, plus.position).normalize();
-            }
-
+            const tmp = new THREE.Vector3();
             particles.forEach(p => {
                 if (p.isDead) return;
                 p.mesh.getWorldPosition(worldP);
                 if (worldP.distanceTo(p.parent.position) > 2.5) { resetSingleParticle(p); return; }
-                if (isFlowing && flowDir) {
-                    p.mesh.position.addScaledVector(flowDir, 0.05);
+                const fd = isFlowing ? p.parent.userData.flowDir : null;
+                if (fd) {
+                    const dir = (p.type === 'N') ? tmp.copy(fd).negate() : tmp.copy(fd);
+                    p.mesh.position.addScaledVector(dir, 0.05);
                 } else {
                     p.mesh.position.addScaledVector(new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5), 0.01);
                 }
@@ -771,9 +650,28 @@
 
         function resetSingleParticle(p) { p.mesh.position.set((Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5); }
 
+        function cellBlocked(pos, placingType) {
+            return objects.some(o => {
+                if (Math.abs(o.position.x - pos.x) > 0.1 || Math.abs(o.position.z - pos.z) > 0.1) return false;
+                const t = o.userData.type;
+                if (placingType === 'P' || placingType === 'N') return t !== 'WIRE';
+                return true;
+            });
+        }
+
+        function inBounds(pos) {
+            return Math.abs(pos.x) <= (curMapX * GRID_SIZE) / 2 - 0.5 &&
+                   Math.abs(pos.z) <= (curMapZ * GRID_SIZE) / 2 - 0.5;
+        }
+
         function spawnReal(type, pos, isAutoDraw = false) {
+            if (cellBlocked(pos, type)) { if (!isAutoDraw) clearSelection(); return; }
+
             const group = new THREE.Group();
-            group.userData.type = type; group.position.copy(pos);
+            group.userData.type = type;
+            group.position.copy(pos);
+            if (type === 'WIRE') group.position.y = WIRE_Y;
+
             if (type === 'WIRE') {
                 const geo = new RoundedBoxGeometry(2, 0.4, 2, 4, 0.1);
                 const mat = new THREE.MeshPhysicalMaterial({ color: 0xcd7f32, metalness: 1.0, roughness: 0.2, clearcoat: 1.0, clearcoatRoughness: 0.1 });
@@ -811,8 +709,6 @@
                     group.add(m); particles.push({ mesh: m, type: type, isDead: false, parent: group });
                 }
             } else {
-                // 고급 전극(Electrode) 디자인 적용
-                // 1. 하단 베이스 (Dark Metal)
                 const baseGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.4, 32);
                 const baseMat = new THREE.MeshPhysicalMaterial({ color: 0x222222, metalness: 0.8, roughness: 0.5 });
                 const baseMesh = new THREE.Mesh(baseGeo, baseMat);
@@ -820,7 +716,6 @@
                 baseMesh.castShadow = true; baseMesh.receiveShadow = true;
                 group.add(baseMesh);
 
-                // 2. 메인 바디 (Anodized Metal)
                 const bodyGeo = new THREE.CylinderGeometry(0.6, 0.6, 1.6, 32);
                 const bodyMat = new THREE.MeshPhysicalMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.2, clearcoat: 1.0 });
                 const bodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
@@ -828,7 +723,6 @@
                 bodyMesh.castShadow = true; bodyMesh.receiveShadow = true;
                 group.add(bodyMesh);
 
-                // 3. 네온 글로우 링 (Glowing Ring)
                 const ringGeo = new THREE.TorusGeometry(0.61, 0.05, 16, 32);
                 const ringMat = new THREE.MeshStandardMaterial({
                     color: 0xffffff,
@@ -841,7 +735,6 @@
                 ringMesh.rotation.x = Math.PI / 2;
                 group.add(ringMesh);
 
-                // 4. 상단 크롬 캡 (Chrome Cap)
                 const capGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.2, 32);
                 const capMat = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.1 });
                 const capMesh = new THREE.Mesh(capGeo, capMat);
@@ -849,7 +742,6 @@
                 capMesh.castShadow = true;
                 group.add(capMesh);
 
-                // 5. 발광 +/- 기호 (Glowing Sign)
                 const signMat = new THREE.MeshStandardMaterial({
                     color: 0xffffff,
                     emissive: type === 'PLUS' ? 0xff2222 : 0x2222ff,
@@ -865,6 +757,7 @@
                     group.add(signV);
                 }
             }
+
             group.scale.set(0.01, 0.01, 0.01);
             scene.add(group); objects.push(group);
 
@@ -878,7 +771,7 @@
             popAnim();
 
             if (type === 'WIRE') {
-                if (!isAutoDraw) updateWireArrows(pos);
+                if (!isAutoDraw) updateWireArrows(group.position);
                 else hideArrows();
             } else {
                 hideArrows();
@@ -886,13 +779,25 @@
             if (!isAutoDraw) clearSelection();
         }
 
+        function removeObject(t) {
+            particles = particles.filter(p => p.parent !== t);
+            scene.remove(t);
+            objects = objects.filter(o => o !== t);
+        }
+
         function updateWireArrows(basePos) {
             hideArrows();
             [new THREE.Vector3(2, 0, 0), new THREE.Vector3(-2, 0, 0), new THREE.Vector3(0, 0, 2), new THREE.Vector3(0, 0, -2)].forEach(d => {
-                const tp = new THREE.Vector3().copy(basePos).add(d);
-                if (!objects.some(o => o.position.distanceTo(tp) < 0.1)) {
-                    const a = new THREE.Mesh(new THREE.ConeGeometry(0.3, 0.6, 16), new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00aa00, transparent: true, opacity: 0.8 }));
-                    a.position.copy(tp); a.lookAt(basePos); a.rotateX(Math.PI / 2);
+                const tp = new THREE.Vector3(basePos.x + d.x, 0, basePos.z + d.z);
+                if (!inBounds(tp)) return;
+                if (!objects.some(o => Math.abs(o.position.x - tp.x) < 0.1 && Math.abs(o.position.z - tp.z) < 0.1)) {
+                    const a = new THREE.Mesh(
+                        new THREE.ConeGeometry(0.3, 0.6, 16),
+                        new THREE.MeshStandardMaterial({ color: 0x00ff00, emissive: 0x00aa00, transparent: true, opacity: 0.8 })
+                    );
+                    a.position.set(tp.x, 0.3, tp.z);
+                    a.lookAt(new THREE.Vector3(basePos.x, 0.3, basePos.z));
+                    a.rotateX(Math.PI / 2);
                     scene.add(a); wireArrows.push(a);
                 }
             });
@@ -901,44 +806,40 @@
         function hideArrows() { wireArrows.forEach(a => scene.remove(a)); wireArrows = []; }
 
         function onMouseUp(event) {
+            if (event.target !== renderer.domElement) return;
             const dragDist = mouseDownPos.distanceTo(new THREE.Vector2(event.clientX, event.clientY));
             if (event.button === 0) {
-                if (dragDist > 5) return; // Prevent spawning if dragging to rotate camera
+                if (dragDist > 5) return;
 
                 if (isDrawingWire) {
                     isDrawingWire = false;
                     updateWireArrows(lastWirePos);
-                    return; // 선 그리기 종료
+                    return;
                 }
 
-                const ray = new THREE.Raycaster(); ray.setFromCamera(getMousePos(event), camera);
+                const ray = new THREE.Raycaster();
+                ray.setFromCamera(getMousePos(event), camera);
 
-                // 와이어 화살표 클릭 확인 (선 그리기 시작)
                 const aHit = ray.intersectObjects(wireArrows);
                 if (aHit.length > 0) {
                     isDrawingWire = true;
-                    lastWirePos.copy(aHit[0].object.position);
+                    lastWirePos.copy(aHit[0].object.position).setY(0);
                     spawnReal('WIRE', lastWirePos.clone(), true);
                     return;
                 }
 
-                // 기존 오브젝트 클릭 확인 (이동/집어들기 기능)
                 const oHit = ray.intersectObjects(objects, true);
                 if (oHit.length > 0) {
-                    let t = oHit[0].object; while (t.parent && !t.userData.type) t = t.parent;
+                    let t = oHit[0].object;
+                    while (t.parent && !t.userData.type) t = t.parent;
                     if (t && t.userData.type) {
                         const now = Date.now();
-                        const isDBL = (now - lastClickTime < 300); lastClickTime = now;
-                        // 와이어 더블클릭 예외처리
+                        const isDBL = (now - lastClickTime < 300);
+                        lastClickTime = now;
                         if (isDBL && t.userData.type === 'WIRE') { updateWireArrows(t.position); return; }
 
-                        // 1. 오브젝트 집어들기 (Pick up)
                         const type = t.userData.type;
-                        particles = particles.filter(p => p.parent !== t);
-                        scene.remove(t);
-                        objects = objects.filter(o => o !== t);
-
-                        // 2. 선택 상태로 변경
+                        removeObject(t);
                         document.querySelectorAll('.block-item').forEach(b => {
                             b.classList.remove('active');
                             if (b.getAttribute('onclick').includes(`'${type}'`)) b.classList.add('active');
@@ -948,19 +849,21 @@
                         ghostMesh.visible = true;
                         ghostMesh.position.copy(t.position);
                         hideArrows();
-                        return; // 스폰하지 않고 집어든 상태로 유지
+                        return;
                     }
                 }
 
-                // 빈 공간 클릭 시 스폰
-                if (selectedType && ghostMesh?.visible) spawnReal(selectedType, ghostMesh.position.clone());
-                else hideArrows();
+                if (selectedType && ghostMesh?.visible && !ghostMesh.userData.blocked) {
+                    spawnReal(selectedType, ghostMesh.position.clone());
+                } else hideArrows();
             } else if (event.button === 2) {
                 if (dragDist < 5) {
-                    const ray = new THREE.Raycaster(); ray.setFromCamera(getMousePos(event), camera);
+                    const ray = new THREE.Raycaster();
+                    ray.setFromCamera(getMousePos(event), camera);
                     const hits = ray.intersectObjects([...objects, plane], true);
                     if (hits.length > 0) {
-                        let t = hits[0].object; while (t.parent && !t.userData.type && !t.userData.isFloor) t = t.parent;
+                        let t = hits[0].object;
+                        while (t.parent && !t.userData.type && !t.userData.isFloor) t = t.parent;
                         showContextMenu(event.clientX, event.clientY, t);
                     }
                 }
@@ -969,15 +872,17 @@
 
         function showContextMenu(x, y, target) {
             const menu = document.getElementById('context-menu');
-            menu.style.display = 'block'; menu.style.left = x + 'px'; menu.style.top = y + 'px';
+            menu.style.display = 'block';
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
             rightClickedObject = target;
 
             const closeBtnHtml = `<span class="menu-close" onclick="closeContextMenu()">✕</span>`;
 
             if (target.userData.isFloor) {
                 menu.innerHTML = `<div class="menu-title"><span>맵 크기 설정</span>${closeBtnHtml}</div>
-                    <div class="menu-input-row">X: <input type="number" id="menuX" value="${curMapX}"></div>
-                    <div class="menu-input-row">Z: <input type="number" id="menuZ" value="${curMapZ}"></div>
+                    <div class="menu-input-row">X: <input type="number" id="menuX" min="4" max="40" value="${curMapX}"></div>
+                    <div class="menu-input-row">Z: <input type="number" id="menuZ" min="4" max="40" value="${curMapZ}"></div>
                     <button class="menu-btn apply" onclick="applyMenuMapSize()">적용하기</button>`;
             } else {
                 menu.innerHTML = `<div class="menu-title"><span>부품 설정</span>${closeBtnHtml}</div><button class="menu-btn delete" onclick="deleteObj()">삭제하기</button>`;
@@ -989,74 +894,103 @@
         };
 
         window.applyMenuMapSize = () => {
-            curMapX = parseInt(document.getElementById('menuX').value) || 10;
-            curMapZ = parseInt(document.getElementById('menuZ').value) || 10;
+            curMapX = Math.min(40, Math.max(4, parseInt(document.getElementById('menuX').value) || 10));
+            curMapZ = Math.min(40, Math.max(4, parseInt(document.getElementById('menuZ').value) || 10));
             updateFloor();
             document.getElementById('context-menu').style.display = 'none';
         };
 
         window.deleteObj = () => {
-            if (rightClickedObject) {
-                particles = particles.filter(p => p.parent !== rightClickedObject);
-                scene.remove(rightClickedObject);
-                objects = objects.filter(o => o !== rightClickedObject);
+            if (rightClickedObject && !rightClickedObject.userData.isFloor) {
+                removeObject(rightClickedObject);
             }
+            rightClickedObject = null;
             document.getElementById('context-menu').style.display = 'none';
         };
 
         function onMouseMove(event) {
             const intersect = getGridIntersect(event);
 
-            // 와이어 연속 그리기 로직
             if (isDrawingWire && intersect) {
-                let currentPos = lastWirePos.clone();
+                let currentPos = lastWirePos.clone().setY(0);
                 let failsafe = 0;
                 while (currentPos.distanceTo(intersect) > 0.1 && failsafe++ < 100) {
                     const dx = intersect.x - currentPos.x;
                     const dz = intersect.z - currentPos.z;
-                    if (Math.abs(dx) > Math.abs(dz)) {
-                        currentPos.x += Math.sign(dx) * GRID_SIZE;
-                    } else {
-                        currentPos.z += Math.sign(dz) * GRID_SIZE;
-                    }
+                    if (Math.abs(dx) > Math.abs(dz)) currentPos.x += Math.sign(dx) * GRID_SIZE;
+                    else currentPos.z += Math.sign(dz) * GRID_SIZE;
 
-                    if (!objects.some(o => o.userData.type === 'WIRE' && o.position.distanceTo(currentPos) < 0.1)) {
-                        spawnReal('WIRE', currentPos.clone(), true);
-                    }
+                    if (!inBounds(currentPos)) break;
+                    if (cellBlocked(currentPos, 'WIRE')) break;
+                    spawnReal('WIRE', currentPos.clone(), true);
                 }
                 lastWirePos.copy(currentPos);
             }
 
             if (intersect && selectedType && !isDrawingWire) {
                 if (!ghostMesh) createGhost(selectedType);
-                ghostMesh.visible = true; ghostMesh.position.copy(intersect);
-                ghostMesh.position.y = (selectedType === 'WIRE') ? 0.1 : 1;
+                ghostMesh.visible = true;
+                ghostMesh.position.copy(intersect);
+                ghostMesh.position.y = (selectedType === 'WIRE') ? WIRE_Y : 1;
+                const blocked = cellBlocked(intersect, selectedType);
+                ghostMesh.userData.blocked = blocked;
+                ghostMesh.material.color.setHex(blocked ? 0xff3344 : 0x00f2fe);
             } else if (ghostMesh) ghostMesh.visible = false;
         }
 
         function getGridIntersect(event) {
-            const ray = new THREE.Raycaster(); ray.setFromCamera(getMousePos(event), camera);
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(getMousePos(event), camera);
             const hits = ray.intersectObject(plane);
-            if (hits.length > 0) return new THREE.Vector3(Math.round(hits[0].point.x / GRID_SIZE) * GRID_SIZE, 0, Math.round(hits[0].point.z / GRID_SIZE) * GRID_SIZE);
+            if (hits.length > 0) {
+                const v = new THREE.Vector3(
+                    Math.round(hits[0].point.x / GRID_SIZE) * GRID_SIZE, 0,
+                    Math.round(hits[0].point.z / GRID_SIZE) * GRID_SIZE
+                );
+                return inBounds(v) ? v : null;
+            }
             return null;
         }
 
-        function getMousePos(e) { return new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1); }
+        function getMousePos(e) {
+            return new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+        }
+
         function createGhost(type) {
             if (ghostMesh) scene.remove(ghostMesh);
-            const geo = type === 'WIRE' ? new RoundedBoxGeometry(GRID_SIZE, 0.4, GRID_SIZE, 4, 0.1) : new RoundedBoxGeometry(GRID_SIZE, GRID_SIZE, GRID_SIZE, 6, 0.2);
+            const geo = type === 'WIRE'
+                ? new RoundedBoxGeometry(GRID_SIZE, 0.4, GRID_SIZE, 4, 0.1)
+                : new RoundedBoxGeometry(GRID_SIZE, GRID_SIZE, GRID_SIZE, 6, 0.2);
             ghostMesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x00f2fe, transparent: true, opacity: 0.4, wireframe: true }));
             scene.add(ghostMesh);
         }
 
-
         window.selectType = (type, el) => {
-            selectedType = type; hideArrows();
+            selectedType = type;
+            hideArrows();
             document.querySelectorAll('.block-item').forEach(b => b.classList.remove('active'));
-            el.classList.add('active'); createGhost(type);
+            el.classList.add('active');
+            createGhost(type);
         };
-        function clearSelection() { selectedType = null; if (ghostMesh) scene.remove(ghostMesh); ghostMesh = null; document.querySelectorAll('.block-item').forEach(b => b.classList.remove('active')); }
-        window.resetScene = () => { objects.forEach(o => scene.remove(o)); particles = []; objects = []; hideArrows(); clearSparks(); };
+
+        function clearSelection() {
+            selectedType = null;
+            if (ghostMesh) scene.remove(ghostMesh);
+            ghostMesh = null;
+            document.querySelectorAll('.block-item').forEach(b => b.classList.remove('active'));
+        }
+
+        window.resetScene = () => {
+            objects.forEach(o => scene.remove(o));
+            particles = [];
+            objects = [];
+            activeIds.clear();
+            lastPathSig = '';
+            hideArrows();
+            clearSparks();
+            document.getElementById('success-hud').classList.remove('active');
+        };
+
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
